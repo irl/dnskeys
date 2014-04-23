@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import getdns, pprint
+import getdns
 import hashlib
 
 dnssec_status = {
@@ -12,6 +12,11 @@ dnssec_status = {
 }
 
 def buildOtrFingerprintHostname(jid):
+    """
+    Build the hostname where the OTR fingerprint should be stored in a
+    text record if it has been published. Don't forget, it's always
+    possible that the name will not exist.
+    """
     parts = jid.split('@')
     hostname  = hashlib.sha224(parts[0]).hexdigest()
     hostname += "._otrfingerprint."
@@ -20,6 +25,12 @@ def buildOtrFingerprintHostname(jid):
     return hostname
 
 def lookupOtrFingerprintRecords(hostname):
+    """
+    Use getdns to lookup the OTR fingerprints on a hostname and verify
+    the validity of the records using DNSSEC. This function returns an
+    list of tuples containing the text of the record and a boolean
+    showing whether or not DNSSEC validation was successful.
+    """
     ctx = getdns.context_create()
     extensions = { "dnssec_return_status" : getdns.GETDNS_EXTENSION_TRUE }
     query_results = getdns.general(ctx, hostname, getdns.GETDNS_RRTYPE_TXT, extensions=extensions)
@@ -34,6 +45,9 @@ def lookupOtrFingerprintRecords(hostname):
     return records
 
 def parseOtrFingerprintRecord(value):
+    """
+    Extract fingerprints from an OTR fingerprint record's value.
+    """
     parts = value.split(" ")
     fingerprints = []
     for part in parts:
@@ -42,6 +56,11 @@ def parseOtrFingerprintRecord(value):
     return fingerprints
 
 def getOtrFingerprints(jid):
+    """
+    Returns a list of tuples containing OTR fingerprints published in
+    DNS for a Jabber ID and whether or not DNSSEC validation was
+    successfully performed for each fingerprint.
+    """
     hostname = buildOtrFingerprintHostname(jid)
     records = lookupOtrFingerprintRecords(hostname)
     fingerprints = []
@@ -49,6 +68,4 @@ def getOtrFingerprints(jid):
         for fingerprint in parseOtrFingerprintRecord(record):
             fingerprints.append((fingerprint, dnssec_valid))
     return fingerprints
-
-pprint.pprint(getOtrFingerprints("irl@jabber.fsfe.org"))
 
