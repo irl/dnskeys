@@ -1,15 +1,29 @@
 #!/usr/bin/env python
 
-import dnskeys
+import otr, openpgp
 import sys
 
 def printOtrFingerprints(jid):
-    for fingerprint, dnssec_valid in dnskeys.getOtrFingerprints(jid):
+    for fingerprint, dnssec_valid in otr.getOtrFingerprints(jid):
         print ( "V: " if dnssec_valid else "I: " ) + fingerprint
 
+def printOpenPGPFingerprints(uid):
+    for fingerprint, uri, dnssec_valid in openpgp.getOpenPGPFingerprints(uid):
+        print ( "V: " if dnssec_valid else "I: " ) + fingerprint + ( ( " # " + uri ) if uri != None else "" )
+
+def usage():
+        print "Usage: %s {otr|openpgp} <jabberID>" % (sys.argv[0],)
+        sys.exit(255)
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Usage: %s <jabberID>" % (sys.argv[0],)
+    if len(sys.argv) < 3:
+        usage()
     else:
-        printOtrFingerprints(sys.argv[1])
+        if sys.argv[1] == "otr":
+            printOtrFingerprints(sys.argv[2])
+            sys.exit(0)
+        if sys.argv[1] == "openpgp":
+            printOpenPGPFingerprints(sys.argv[2])
+            sys.exit(0)
+        usage() # Something wasn't right
 
